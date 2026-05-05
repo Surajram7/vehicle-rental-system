@@ -153,6 +153,19 @@ app.put('/api/vehicles/:id/status', async (req, res) => {
     res.json(result);
 });
 
+app.put('/api/vehicles/:id/verify', authenticateToken, isAdmin, async (req, res) => {
+    const result = await dbHandlers.updateVehicleVerification({ id: req.params.id, is_verified: req.body.is_verified });
+    if (result.success) {
+        await dbHandlers.addAuditLog({
+            user_id: req.user.id,
+            action: req.body.is_verified ? 'VERIFY_VEHICLE' : 'UNVERIFY_VEHICLE',
+            target_type: 'vehicle',
+            target_id: req.params.id
+        });
+    }
+    res.json(result);
+});
+
 // Bookings
 app.post('/api/bookings', authenticateToken, async (req, res) => {
     const result = await dbHandlers.createBooking(req.body);
@@ -288,14 +301,6 @@ app.post('/api/reviews', async (req, res) => {
     res.json(result);
 });
 
-app.get('/api/reviews/vehicle/:vehicleId', async (req, res) => {
-    try {
-        const reviews = await dbHandlers.getVehicleReviews(req.params.vehicleId);
-        res.json(reviews);
-    } catch (e) {
-        res.status(500).json({ error: e.message });
-    }
-});
 
 // Dashboard Metrics
 app.get('/api/dashboard/stats', authenticateToken, isAdmin, async (req, res) => {

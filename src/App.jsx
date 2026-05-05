@@ -12,11 +12,13 @@ import MainLayout from './components/Layout/MainLayout';
 // Pages - Customer
 import HomePage from './pages/Customer/HomePage';
 import VehicleGrid from './pages/Customer/VehicleGrid';
+import VehicleDetails from './pages/Customer/VehicleDetails';
 import BookingsList from './pages/Customer/BookingsList';
 import MyVehicles from './pages/Customer/MyVehicles';
 import ReceivedBookings from './pages/Customer/ReceivedBookings';
 import MyProfile from './pages/Customer/MyProfile';
 import PaymentPage from './pages/Customer/PaymentPage';
+import Support from './pages/Customer/Support';
 
 // Pages - Admin
 import Dashboard from './pages/Admin/Dashboard';
@@ -24,6 +26,7 @@ import VehicleManager from './pages/Admin/VehicleManager';
 import BookingManager from './pages/Admin/BookingManager';
 import UserManager from './pages/Admin/UserManager';
 import AuditLogs from './pages/Admin/AuditLogs';
+import TicketManager from './pages/Admin/TicketManager';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user } = useAuth();
@@ -54,6 +57,11 @@ const App = () => {
             <VehicleGrid />
           </ProtectedRoute>
         } />
+        <Route path="vehicle/:id" element={
+          <ProtectedRoute allowedRoles={['user']}>
+            <VehicleDetails />
+          </ProtectedRoute>
+        } />
         <Route path="my-bookings" element={
           <ProtectedRoute allowedRoles={['user']}>
             <BookingsList />
@@ -77,6 +85,11 @@ const App = () => {
         <Route path="payment" element={
           <ProtectedRoute allowedRoles={['user']}>
             <PaymentPage />
+          </ProtectedRoute>
+        } />
+        <Route path="support" element={
+          <ProtectedRoute>
+            <Support />
           </ProtectedRoute>
         } />
 
@@ -104,6 +117,11 @@ const App = () => {
         <Route path="audit-logs" element={
           <ProtectedRoute allowedRoles={['admin']}>
             <AuditLogs />
+          </ProtectedRoute>
+        } />
+        <Route path="manage-tickets" element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <TicketManager />
           </ProtectedRoute>
         } />
       </Route>

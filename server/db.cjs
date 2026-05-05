@@ -55,6 +55,7 @@ function initDb() {
     db.run(`ALTER TABLE vehicles ADD COLUMN seating_capacity INTEGER`, (err) => {});
     db.run(`ALTER TABLE vehicles ADD COLUMN features JSON`, (err) => {});
     db.run(`ALTER TABLE vehicles ADD COLUMN is_insured INTEGER DEFAULT 0`, (err) => {});
+    db.run(`ALTER TABLE vehicles ADD COLUMN is_verified INTEGER DEFAULT 0`, (err) => {});
 
     // Create a default admin if non exists
     db.get(`SELECT id FROM users WHERE role = 'admin'`, [], async (err, row) => {
@@ -81,6 +82,7 @@ function initDb() {
       available_from TEXT,
       available_to TEXT,
       status TEXT DEFAULT 'available',
+      is_verified INTEGER DEFAULT 0,
       FOREIGN KEY(owner_id) REFERENCES users(id)
     )`);
 
@@ -140,6 +142,18 @@ function initDb() {
       status TEXT DEFAULT 'pending',
       FOREIGN KEY(user_id) REFERENCES users(id),
       FOREIGN KEY(vehicle_id) REFERENCES vehicles(id)
+    )`);
+
+    // Tickets table
+    db.run(`CREATE TABLE IF NOT EXISTS tickets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT DEFAULT 'open',
+      reply TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id)
     )`);
   });
 }
@@ -213,17 +227,16 @@ module.exports = {
   // Vehicles
   getVehicles: () => fetchAll(`SELECT v.*, u.name as owner_name, u.phone as owner_phone, u.city as owner_city, u.avatar as owner_avatar, u.cnic_verified as owner_verified FROM vehicles v JOIN users u ON v.owner_id = u.id ORDER BY v.id DESC`),
   getVehiclesByOwner: (ownerId) => fetchAll(`SELECT v.*, u.name as owner_name, u.cnic_verified as owner_verified FROM vehicles v JOIN users u ON v.owner_id = u.id WHERE v.owner_id = ? ORDER BY v.id DESC`, [ownerId]),
-  addVehicle: async (v) => {
     const result = await execute(
-      `INSERT INTO vehicles (owner_id, name, type, engine_type, condition, city, location, registration_no, price_per_day, images, description, available_from, available_to, status, year, transmission, seating_capacity, features, is_insured) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [v.owner_id, v.name, v.type, v.engine_type, v.condition, v.city, v.location, v.registration_no, v.price_per_day, JSON.stringify(v.images || []), v.description, v.available_from, v.available_to, v.status || 'pending', v.year || null, v.transmission || null, v.seating_capacity || null, JSON.stringify(v.features || []), v.is_insured ? 1 : 0]
+      `INSERT INTO vehicles (owner_id, name, type, engine_type, condition, city, location, registration_no, price_per_day, images, description, available_from, available_to, status, year, transmission, seating_capacity, features, is_insured, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [v.owner_id, v.name, v.type, v.engine_type, v.condition, v.city, v.location, v.registration_no, v.price_per_day, JSON.stringify(v.images || []), v.description, v.available_from, v.available_to, v.status || 'pending', v.year || null, v.transmission || null, v.seating_capacity || null, JSON.stringify(v.features || []), v.is_insured ? 1 : 0, 0]
     );
     return { success: true, id: result.id };
   },
   updateVehicle: async (v) => {
     await execute(
-      `UPDATE vehicles SET name = ?, type = ?, engine_type = ?, condition = ?, city = ?, location = ?, registration_no = ?, price_per_day = ?, images = ?, description = ?, available_from = ?, available_to = ?, status = ?, year = ?, transmission = ?, seating_capacity = ?, features = ?, is_insured = ? WHERE id = ?`,
-      [v.name, v.type, v.engine_type, v.condition, v.city, v.location, v.registration_no, v.price_per_day, JSON.stringify(v.images || []), v.description, v.available_from, v.available_to, v.status, v.year || null, v.transmission || null, v.seating_capacity || null, JSON.stringify(v.features || []), v.is_insured ? 1 : 0, v.id]
+      `UPDATE vehicles SET name = ?, type = ?, engine_type = ?, condition = ?, city = ?, location = ?, registration_no = ?, price_per_day = ?, images = ?, description = ?, available_from = ?, available_to = ?, status = ?, year = ?, transmission = ?, seating_capacity = ?, features = ?, is_insured = ?, is_verified = ? WHERE id = ?`,
+      [v.name, v.type, v.engine_type, v.condition, v.city, v.location, v.registration_no, v.price_per_day, JSON.stringify(v.images || []), v.description, v.available_from, v.available_to, v.status, v.year || null, v.transmission || null, v.seating_capacity || null, JSON.stringify(v.features || []), v.is_insured ? 1 : 0, v.is_verified || 0, v.id]
     );
     return { success: true };
   },
@@ -233,6 +246,10 @@ module.exports = {
   },
   updateVehicleStatus: async ({ id, status }) => {
     await execute(`UPDATE vehicles SET status = ? WHERE id = ?`, [status, id]);
+    return { success: true };
+  },
+  updateVehicleVerification: async ({ id, is_verified }) => {
+    await execute(`UPDATE vehicles SET is_verified = ? WHERE id = ?`, [is_verified, id]);
     return { success: true };
   },
 
@@ -321,6 +338,21 @@ module.exports = {
     FROM reviews r 
     JOIN users u ON r.user_id = u.id 
     WHERE r.vehicle_id = ? ORDER BY r.id DESC`, [vehicleId]),
+
+  // Tickets
+  createTicket: async (t) => {
+    const result = await execute(
+      `INSERT INTO tickets (user_id, subject, message) VALUES (?, ?, ?)`,
+      [t.user_id, t.subject, t.message]
+    );
+    return { success: true, id: result.id };
+  },
+  getUserTickets: (userId) => fetchAll(`SELECT * FROM tickets WHERE user_id = ? ORDER BY id DESC`, [userId]),
+  getAllTickets: () => fetchAll(`SELECT t.*, u.name as user_name, u.email as user_email FROM tickets t JOIN users u ON t.user_id = u.id ORDER BY t.id DESC`),
+  replyToTicket: async ({ id, reply, status }) => {
+    await execute(`UPDATE tickets SET reply = ?, status = ? WHERE id = ?`, [reply, status || 'closed', id]);
+    return { success: true };
+  },
 
   // Dashboard
   getDashboardStats: async () => {

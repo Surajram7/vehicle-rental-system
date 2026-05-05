@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Edit, CheckCircle, ShieldCheck, ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../../api';
 
@@ -56,6 +56,15 @@ const VehicleManager = () => {
     }
   };
 
+  const handleVerify = async (id, currentStatus) => {
+    try {
+      await api.updateVehicleVerification({ id, is_verified: currentStatus ? 0 : 1 });
+      loadVehicles();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center" style={{ marginBottom: '32px' }}>
@@ -82,7 +91,12 @@ const VehicleManager = () => {
           <tbody>
             {vehicles.map(v => (
               <tr key={v.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                <td style={{ padding: '16px 24px', fontWeight: 500 }}>{v.name}</td>
+                <td style={{ padding: '16px 24px', fontWeight: 500 }}>
+                  <div className="flex items-center gap-2">
+                    {v.name}
+                    {v.is_verified === 1 && <ShieldCheck size={14} color="var(--success)" title="Verified" />}
+                  </div>
+                </td>
                 <td style={{ padding: '16px 24px', color: 'var(--text-secondary)' }}>{v.type}</td>
                 <td style={{ padding: '16px 24px' }}>${v.price_per_day}</td>
                 <td style={{ padding: '16px 24px' }}>
@@ -95,6 +109,9 @@ const VehicleManager = () => {
                         <CheckCircle size={18} />
                       </button>
                     )}
+                    <button onClick={() => handleVerify(v.id, v.is_verified)} style={{ background: 'none', color: v.is_verified ? 'var(--warning)' : 'var(--text-muted)', padding: '4px' }} title={v.is_verified ? "Unverify Vehicle" : "Verify Vehicle"}>
+                      {v.is_verified ? <ShieldAlert size={18} /> : <ShieldCheck size={18} />}
+                    </button>
                     <button onClick={() => handleDelete(v.id)} style={{ background: 'none', color: 'var(--danger)', padding: '4px' }} title="Delete Vehicle">
                       <Trash2 size={18} />
                     </button>

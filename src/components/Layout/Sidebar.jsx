@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate, Link } from 'react-router-dom';
-import { LayoutDashboard, Car, CalendarDays, Users, LogOut, Search, PlusCircle, BookMarked, MapPin, Phone, UserCircle, ChevronRight, History, Home } from 'lucide-react';
+import { LayoutDashboard, Car, CalendarDays, Users, LogOut, Search, PlusCircle, BookMarked, MapPin, Phone, UserCircle, ChevronRight, History, Home, HelpCircle, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { APP_NAME } from '../../constants';
 import Logo from '../Common/Logo';
@@ -20,6 +20,7 @@ const Sidebar = () => {
     { to: '/manage-vehicles', icon: <Car size={16} />, label: 'Vehicles' },
     { to: '/manage-bookings', icon: <CalendarDays size={16} />, label: 'Bookings' },
     { to: '/manage-users', icon: <Users size={16} />, label: 'Users' },
+    { to: '/manage-tickets', icon: <MessageSquare size={16} />, label: 'Tickets' },
     { to: '/audit-logs', icon: <History size={16} />, label: 'Audit Logs' },
   ];
 
@@ -30,6 +31,7 @@ const Sidebar = () => {
     { to: '/my-vehicles', icon: <PlusCircle size={16} />, label: 'My Listings' },
     { to: '/received-bookings', icon: <BookMarked size={16} />, label: 'Received Bookings' },
     { to: '/profile', icon: <UserCircle size={16} />, label: 'My Profile' },
+    { to: '/support', icon: <HelpCircle size={16} />, label: 'Help & Support' },
   ];
 
   const links = user?.role === 'admin' ? adminLinks : userLinks;

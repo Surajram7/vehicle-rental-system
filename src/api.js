@@ -55,6 +55,10 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify({ status: data.status })
     }),
+    updateVehicleVerification: (data) => fetchWrapper(`/vehicles/${data.id}/verify`, {
+        method: 'PUT',
+        body: JSON.stringify({ is_verified: data.is_verified })
+    }),
 
     // Bookings
     createBooking: (booking) => fetchWrapper('/bookings', {
@@ -100,5 +104,17 @@ export const api = {
 
     // Dashboard Metrics & Logs
     getDashboardStats: () => fetchWrapper('/dashboard/stats'),
-    getAuditLogs: () => fetchWrapper('/audit-logs')
+    getAuditLogs: () => fetchWrapper('/audit-logs'),
+
+    // Tickets
+    createTicket: (data) => fetchWrapper('/tickets', {
+        method: 'POST',
+        body: JSON.stringify(data)
+    }),
+    getUserTickets: () => fetchWrapper('/tickets/user'),
+    getAllTickets: () => fetchWrapper('/tickets'),
+    replyToTicket: (data) => fetchWrapper(`/tickets/${data.id}/reply`, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+    })
 };
